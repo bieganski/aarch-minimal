@@ -1,9 +1,7 @@
 #include "pl011.h"
 
-#define UART_BASE 0xfe201000
+#define UART_BASE 0x9000000 // matches QEMU '-machine virt'. determined using 'qemu-system-XXX -machine virt -machine dumpdtb=qemu.dtb'
 #define CLOCK_FREQ 24000000  // must match device tree
-
-
 
 void print_hex(struct pl011* dev, char* prefix, uint32_t value) {
     while (*prefix) {
@@ -17,16 +15,10 @@ void print_hex(struct pl011* dev, char* prefix, uint32_t value) {
     pl011_send(dev, "\r\n", 2);
 }
 
-int main (void* a1, void* a2, void* a3, void* a4){
+int main (int argc, char**argv){
     struct pl011 dev;
     pl011_setup(&dev, UART_BASE, CLOCK_FREQ);
 
-    // while(1) {
-    print_hex(&dev, "a1: ", (uint32_t) a1);
-    print_hex(&dev, "(uint32_t) *a1: ", *((uint32_t*) a1));
-    print_hex(&dev, "a2: ", (uint32_t) a2);
-    print_hex(&dev, "a3: ", (uint32_t) a3);
-    print_hex(&dev, "a4: ", (uint32_t) a4);
-    // }
+    print_hex(&dev, "\nHello from your 'but-we-have-kernel-at-home' kernel!", (0x4200 | 0x42));
     return 0;
 }

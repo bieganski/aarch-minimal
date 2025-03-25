@@ -1,4 +1,5 @@
-OUTPUT_FORMAT(elf64-littleaarch64)
+STACK_SIZE = 0x10000;
+
 ENTRY(_start)
 
 PHDRS
@@ -7,45 +8,50 @@ PHDRS
     text PT_LOAD FILEHDR PHDRS;
     rodata PT_LOAD;
     data PT_LOAD;
+    bss PT_LOAD;
+    stack PT_LOAD;
 }
 
 SECTIONS
 {
     . = SIZEOF_HEADERS;
     . = 0x1000;
-    _IMAGE_START = .;
 
     .text : {
-        _TEXT_BEGIN = .;
         *(.head.text)
         *(.text)
-        _TEXT_END = .;
     } :text
 
     .init_array : ALIGN(0x1000) {
-        _INIT_BEGIN = .;
         KEEP(*(SORT(.init_array.*)))
         KEEP(*(.init_array))
-        _INIT_END = .;
     } :rodata
 
     .rodata : {
-        _RODATA_BEGIN = .;
         *(.rodata)
-        _RODATA_END = .;
     } :rodata
 
     .data : {
-        _DATA_BEGIN = .;
         *(.data)
-        _DATA_END = .;
-    } :data
+    } :data =0xcd
+
+    # NOTE
+    # we pad .bss on purpose with trailing byte, in order to force section type PROGBITS.
+    # the reason for that is to avoid zeroing .bss in runtime by kernel code before jumping to main.
 
     .bss : {
-        _BSS_BEGIN = .;
         *(.bss)
-        _BSS_END = .;
-    } :data
+        BYTE(0);
+    } :bss
+
+    # NOTE
+    # stack is also PROGBITS, but is additionally poisoned by 0xAB repeating byte.
+
+    .stack : ALIGN(0x1000) {
+        BYTE(0);
+        . = ALIGN(8);
+        . = . + STACK_SIZE - 8;
+    } :stack =0xAB
 
     _end = .;
 }

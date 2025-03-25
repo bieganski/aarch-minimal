@@ -1,6 +1,8 @@
-.section ".head.text","ax"
+.section ".head.text"
 .global _start
 .extern _end
+
+// for boot protocol see https://www.kernel.org/doc/Documentation/arm64/booting.txt
 
 _start:
     // code0/code1
@@ -21,11 +23,25 @@ _start:
     .quad 0
     .quad 0
 
-    // magic - yes 0x644d5241 is the same as ASCII string "ARM\x64"
+    // magic
     .ascii "ARM\x64"
 
     // Another reserved field at the end of the header
     .byte 0, 0, 0, 0
 
 entry:
+
+    // NOTE: in x0 there is a device tree address, that was set by bootloader/QEMU. for now we discard it.
+
+    adr x0 , _end   // the '_end' symbol points *after* the stack; see linker script.
+
+    mov sp, x0
+
+    mov x0, 0       // de-clobber x0 before jumping to 'main'.
+    
+    // NOTE:
+    // this is a good place to clear the BSS and stack, before jumping to 'main'.
+    // for simplicity we don't do this, since we forced it in linker script - the bootloader will do this for us.
     bl main
+
+    wfi
